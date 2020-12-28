@@ -27,61 +27,72 @@ struct game_static {
 	struct site_static sites[NUM_SITES_MAX];
 };
 
+struct site {
+	int site_id;
+	// used in future leagues
+	int ignore_1;
+	// used in future leagues
+	int ignore_2;
+	// -1 = No structure, 2 = Barracks
+	int structure_type;
+	// -1 = No structure, 0 = Friendly, 1 = Enemy
+	int owner;
+	int param_1;
+	int param_2;
+};
+
+struct unit {
+	int x;
+	int y;
+	int owner;
+	int unit_type;
+	int health;
+};
+
+struct game {
+	int gold;
+	int touched_site;
+	int num_units;
+	struct site *sites;
+	struct unit *units;
+};
+
 void load_game_static (struct game_static *);
 void print_game_static (struct game_static *);
+void print_game (struct game *);
+void load_game(struct game *);
+void load_sites(struct game *);
+void load_site(struct site *);
+void load_units(struct game *);
+void load_unit(struct unit *);
+void free_game(struct game *);
+void load_game(struct game *);
+
+
+struct game_static gs;
 
 int main()
 {
-	struct game_static gs;
 	load_game_static(&gs);
 	print_game_static(&gs);
 	
 	// game loop
 	while (1) {
-		int gold;
-		// -1 if none
-		int touched_site;
-		scanf("%d%d", &gold, &touched_site);
-		for (int i = 0; i < gs.num_sites; i++) {
-			int site_id;
-			// used in future leagues
-			int ignore_1;
-			// used in future leagues
-			int ignore_2;
-			// -1 = No structure, 2 = Barracks
-			int structure_type;
-			// -1 = No structure, 0 = Friendly, 1 = Enemy
-			int owner;
-			int param_1;
-			int param_2;
-			scanf("%d%d%d%d%d%d%d", &site_id, &ignore_1, &ignore_2, &structure_type, &owner, &param_1, &param_2);
-		}
-		int num_units;
-		scanf("%d", &num_units);
-		for (int i = 0; i < num_units; i++) {
-			int x;
-			int y;
-			int owner;
-			// -1 = QUEEN, 0 = KNIGHT, 1 = ARCHER
-			int unit_type;
-			int health;
-			scanf("%d%d%d%d%d", &x, &y, &owner, &unit_type, &health);
-		}
-
-		// Write an action using printf(). DON'T FORGET THE TRAILING \n
-		// To debug: fprintf(stderr, "Debug messages...\n");
-
+		struct game game;
+		load_game(&game);
 
 		// First line: A valid queen action
 		// Second line: A set of training instructions
 		printf("WAIT\n");
 		printf("TRAIN\n");
+		print_game(&game);
+		free_game(&game);
 	}
 
 	return 0;
 }
 
-void load_game_static (struct game_static * gs) {
+void load_game_static (struct game_static *gs) {
 	scanf("%d", &gs->num_sites);
 	struct site_static * s;
 	for (int i = 0; i < gs->num_sites; i++) {
@@ -90,7 +101,7 @@ void load_game_static (struct game_static * gs) {
 	}
 }
 
-void print_game_static (struct game_static * gs) {
+void print_game_static (struct game_static *gs) {
 	fprintf(stderr, "num_sites: %d\n", gs->num_sites);
 	fprintf(stderr, "%8s%8s%8s%8s\n", "site_id", "x", "y", "radius");
 	struct site_static * s;
@@ -98,4 +109,78 @@ void print_game_static (struct game_static * gs) {
 		s = &gs->sites[i];
 		fprintf(stderr, "%8d%8d%8d%8d\n", s->site_id, s->x, s->y, s->radius);
 	}
+}
+
+void load_game (struct game *g) {
+	scanf("%d%d", &g->gold, &g->touched_site);
+	load_sites(g);
+	load_units(g);
+}
+
+void load_sites(struct game *g) {
+	struct site *sites;
+	g->sites = sites = malloc(gs.num_sites * sizeof(struct site));
+	for (int i = 0; i < gs.num_sites; i++) {
+		load_site(sites++);
+	}
+}
+
+void load_site(struct site *s) {
+	scanf("%d%d%d%d%d%d%d",
+			&s->site_id,
+			&s->ignore_1,
+			&s->ignore_2,
+			&s->structure_type,
+			&s->owner,
+			&s->param_1,
+			&s->param_2);
+}
+
+void load_units(struct game *g) {
+	struct unit *units;
+	int num_units;
+	scanf("%d", &num_units);
+	g->num_units = num_units;
+	g->units = units = malloc(num_units * sizeof(struct unit));
+	for (int i = 0; i < num_units; i++) {
+		load_unit(units++);
+	}
+}
+
+void load_unit(struct unit *u) {
+	scanf("%d%d%d%d%d", &u->x, &u->y, &u->owner, &u->unit_type, &u->health);
+}
+
+void free_game(struct game *g) {
+	free(g->sites);
+	free(g->units);
+}
+
+void print_player_info(struct game *g) {
+	fprintf(stderr, "Game:\nGold=%d, touched_site=%d, num_units=%d\n", g->gold, g->touched_site, g->num_units);
+}
+
+void print_sites (struct game *g) {
+	fprintf(stderr, "site_id\tstructure_type\towner\tparam_1\tparam_2\n");
+	struct site *s;
+	for (int i = 0; i < gs.num_sites; i++) {
+		s = &g->sites[i];
+		fprintf(stderr, "%d\t%d\t%d\t%d\t%d\n", s->site_id, s->structure_type, s->owner, s->param_1, s->param_2);
+	}
+}
+
+void print_units (struct game *g) {
+	fprintf(stderr, "x\ty\towner\tunit_type\thealth\n");
+	struct unit u;
+	for (int i = 0; i < g->num_units; i++) {
+		u = g->units[i];
+		fprintf(stderr, "%d\t%d\t%d\t%d\t%d\n", u.x, u.y, u.owner, u.unit_type, u.health);
+	}
+}
+
+// print turn-specific information
+void print_game (struct game *g) {
+	print_player_info(g);
+	print_sites (g);
+	print_units (g);
 }

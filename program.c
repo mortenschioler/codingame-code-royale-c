@@ -66,7 +66,6 @@ void load_site(struct site *);
 void load_units(struct game *);
 void load_unit(struct unit *);
 void free_game(struct game *);
-void load_game(struct game *);
 
 
 struct game_static gs;

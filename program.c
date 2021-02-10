@@ -85,7 +85,27 @@ int main()
 		struct game game;
 		load_game(&game);
 
-        if (home == -1) home = game.touched_site;
+        if (home == -1) {
+            struct unit queen;
+            for (int i = 0; i < game.num_units; i++) {
+                struct unit u = game.units[i];
+                if (u.unit_type == -1 && u.owner == 0) {
+                    queen = u;
+                    break;
+                }
+            }
+            double closest = 1000000;
+            for (int i = 0; i < gs.num_sites; i++) {
+                double d;
+                struct site_static s = gs.sites[i];
+                
+                d = distance(queen.x, queen.y, s.x, s.y);
+                if (d < closest) {
+                    closest = d;
+                    home = i;
+                }
+            }
+        }
 
 		// First line: A valid queen action
 		// Second line: A set of training instructions

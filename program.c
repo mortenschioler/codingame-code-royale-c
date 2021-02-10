@@ -66,7 +66,6 @@ void load_site(struct site *);
 void load_units(struct game *);
 void load_unit(struct unit *);
 void free_game(struct game *);
-void load_game(struct game *);
 
 
 struct game_static gs;
@@ -76,15 +75,24 @@ int main()
 	load_game_static(&gs);
 	print_game_static(&gs);
 	
+    int home = -1;
+
 	// game loop
 	while (1) {
 		struct game game;
 		load_game(&game);
 
+        if (home == -1) home = game.touched_site;
+
 		// First line: A valid queen action
 		// Second line: A set of training instructions
-		printf("WAIT\n");
-		printf("TRAIN\n");
+        if (game.sites[home].structure_type == -1) {
+            printf("BUILD %d BARRACKS-KNIGHT\n", home);
+        } else {
+            printf("WAIT\n");
+        }
+		
+		printf("TRAIN %d\n", home);
 		print_game(&game);
 		free_game(&game);
 	}

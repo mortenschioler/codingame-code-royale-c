@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
+#include <math.h>
 
 #define NUM_SITES_MAX 50
 
@@ -67,6 +68,8 @@ void load_units(struct game *);
 void load_unit(struct unit *);
 void free_game(struct game *);
 
+int square(int n);
+double distance(int x0, int y0, int x1, int x2);
 
 struct game_static gs;
 
@@ -191,4 +194,12 @@ void print_game (struct game *g) {
 	print_player_info(g);
 	print_sites (g);
 	print_units (g);
+}
+
+int square (int n) {
+	return n * n;
+}
+
+double distance (int x0, int y0, int x1, int y1) {
+	return sqrt(square(x1 - x0) + square(y1 - y0));
 }

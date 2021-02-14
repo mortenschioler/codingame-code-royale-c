@@ -5,6 +5,8 @@
 #include <math.h>
 
 #define NUM_SITES_MAX 50
+#define OWNER_FRIENDLY 0
+#define NONE -1
 
 struct site_static;
 struct game_static;
@@ -60,7 +62,7 @@ struct game {
 };
 
 enum barracks_type {
-    KNIGHT, ARCHER, GIANT
+	KNIGHT, ARCHER, GIANT
 };
 
 void load_game_static (struct game_static *);
@@ -79,7 +81,9 @@ double distance(int x0, int y0, int x1, int x2);
 
 double game_value(struct game *);
 void simulate(struct game * g, char * cmd);
-char ** candidates(struct game *);
+void candidates(struct game *, char ** cands);
+
+
 
 struct game_static gs;
 
@@ -88,27 +92,28 @@ int main()
 
 	load_game_static(&gs);
 	print_game_static(&gs);
-	
+
 	// game loop
 	while (1) {
 		struct game game;
 		load_game(&game);
 
-        char * best_strategy = "WAIT\nTRAIN\n";
-		char ** cands = candidates(&game);
-        double value = -1000000;
-        double val;
-        for (char ** c = cands; c != NULL; c++) {
-            struct game sim;
-            copy_game (&game, &sim);
-            simulate(&sim, *c);
-            val = game_value(&sim);
-            if (val > value) {
-                best_strategy = *c;
-                value = val;
-            }
-        }
-        printf("%s", best_strategy);
+		char * best_strategy = "WAIT\nTRAIN\n";
+		char * cands[2];
+		candidates(&game, cands);
+		double value = -1000000;
+		double val;
+		for (char ** c = cands; *c != ""; c++) {
+			struct game sim;
+			copy_game (&game, &sim);
+			simulate(&sim, *c);
+			val = game_value(&sim);
+			if (val > value) {
+				best_strategy = *c;
+				value = val;
+			}
+		}
+		printf("%s", best_strategy);
 
 		print_game(&game);
 		free_game(&game);
@@ -218,27 +223,54 @@ double distance (int x0, int y0, int x1, int y1) {
 	return sqrt(square(x1 - x0) + square(y1 - y0));
 }
 
-char * as_word (enum barracks_type type) {
-    switch (type) {
-        case KNIGHT: return "KNIGHT";
-        case ARCHER: return "ARCHER";
-        case GIANT: return "GIANT";
-    }
+int count_sites (struct game * g, int (*f)(struct site)) {
+	int acc = 0;
+	for (int i = 0; i < gs.num_sites; i++) {
+		acc += (*f)(g->sites[i]);
+	}
+	return acc;
 }
 
+int site_weight (struct site s) {
+	return (s.structure_type != NONE) * (s.owner == OWNER_FRIENDLY);
+}
+
+char * as_word (enum barracks_type type) {
+	switch (type) {
+		case KNIGHT: return "KNIGHT";
+		case ARCHER: return "ARCHER";
+		case GIANT: return "GIANT";
+	}
+}
 
 void copy_game (struct game * from, struct game * to) {
-    return;
+	*to = *from;
 }
 
 double game_value(struct game * g) {
-    return 1;
+	return count_sites(g, site_weight);
+}
+
+int parse_site_id (char * s) {
+	int n1, n2;
+	n1 = *s - '0';
+	n2 = *(++s);
+	if (n2 == ' ') {
+		return n1;
+	} else {
+		return 10*n1 + n2;
+	}
 }
 
 void simulate(struct game * g, char * cmd) {
-    return;
+	if (strncmp ("BUILD ", cmd, 6) == 0) {
+		int site_id = parse_site_id(cmd + 6 * sizeof (char));
+		g->sites[site_id].structure_type = 1;
+	}
 }
 
-char ** candidates(struct game * g) {
-    return NULL;
+void candidates(struct game * g, char ** cands) {
+	char * str = "BUILD 0 BARRACKS-KNIGHT\nTRAIN\n";
+	cands[0] = str;
+	cands[1] = "";
 }

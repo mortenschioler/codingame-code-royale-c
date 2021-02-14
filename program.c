@@ -11,6 +11,7 @@ struct game_static;
 struct game;
 struct site;
 struct unit;
+struct command;
 
 struct site_static {
 	int site_id;
@@ -58,6 +59,10 @@ struct game {
 	struct unit *units;
 };
 
+enum barracks_type {
+    KNIGHT, ARCHER, GIANT
+};
+
 void load_game_static (struct game_static *);
 void print_game_static (struct game_static *);
 void print_game (struct game *);
@@ -67,14 +72,20 @@ void load_site(struct site *);
 void load_units(struct game *);
 void load_unit(struct unit *);
 void free_game(struct game *);
+void copy_game (struct game * from, struct game * to);
 
 int square(int n);
 double distance(int x0, int y0, int x1, int x2);
+
+double game_value(struct game *);
+void simulate(struct game * g, char * cmd);
+char ** candidates(struct game *);
 
 struct game_static gs;
 
 int main()
 {
+
 	load_game_static(&gs);
 	print_game_static(&gs);
 	
@@ -83,10 +94,22 @@ int main()
 		struct game game;
 		load_game(&game);
 
-		// First line: A valid queen action
-		// Second line: A set of training instructions
-		printf("WAIT\n");
-		printf("TRAIN\n");
+        char * best_strategy = "WAIT\nTRAIN\n";
+		char ** cands = candidates(&game);
+        double value = -1000000;
+        double val;
+        for (char ** c = cands; c != NULL; c++) {
+            struct game sim;
+            copy_game (&game, &sim);
+            simulate(&sim, *c);
+            val = game_value(&sim);
+            if (val > value) {
+                best_strategy = *c;
+                value = val;
+            }
+        }
+        printf("%s", best_strategy);
+
 		print_game(&game);
 		free_game(&game);
 	}
@@ -193,4 +216,29 @@ int square (int n) {
 
 double distance (int x0, int y0, int x1, int y1) {
 	return sqrt(square(x1 - x0) + square(y1 - y0));
+}
+
+char * as_word (enum barracks_type type) {
+    switch (type) {
+        case KNIGHT: return "KNIGHT";
+        case ARCHER: return "ARCHER";
+        case GIANT: return "GIANT";
+    }
+}
+
+
+void copy_game (struct game * from, struct game * to) {
+    return;
+}
+
+double game_value(struct game * g) {
+    return 1;
+}
+
+void simulate(struct game * g, char * cmd) {
+    return;
+}
+
+char ** candidates(struct game * g) {
+    return NULL;
 }

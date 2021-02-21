@@ -99,11 +99,11 @@ int main()
 		load_game(&game);
 
 		char * best_strategy = "WAIT\nTRAIN\n";
-		char * cands[2];
+		char * cands[1000];
 		candidates(&game, cands);
 		double value = -1000000;
 		double val;
-		for (char ** c = cands; *c != ""; c++) {
+		for (char ** c = cands; **c != '\0'; c++) {
 			struct game sim;
 			copy_game (&game, &sim);
 			simulate(&sim, *c);
@@ -243,6 +243,13 @@ char * as_word (enum barracks_type type) {
 	}
 }
 
+enum barracks_type find_barracks_type (char * cmd) {
+	if (strstr(cmd, "KNIGHT")) return KNIGHT;
+	if (strstr(cmd, "ARCHER")) return ARCHER;
+	// FIXME bad fallthrough (maybe get rid of enum)
+	return GIANT;
+}
+
 void copy_game (struct game * from, struct game * to) {
 	*to = *from;
 }
@@ -270,7 +277,14 @@ void simulate(struct game * g, char * cmd) {
 }
 
 void candidates(struct game * g, char ** cands) {
+	int i = 0;
 	char * str = "BUILD 0 BARRACKS-KNIGHT\nTRAIN\n";
+	for (int site_id = 0; site_id < 10; site_id++) {
+		str[6] = site_id - '0';
+		cands[i++] = str;
+	}
+
 	cands[0] = str;
 	cands[1] = "";
+	cands[0] = "";
 }

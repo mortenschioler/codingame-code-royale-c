@@ -207,7 +207,7 @@ double distance (int x0, int y0, int x1, int y1) {
 }
 
 void copy_game (struct game * from, struct game * to) {
-	to->gold = from->gold;
+    to->gold = from->gold;
     to->num_units = from->num_units;
     to->touched_site = from->touched_site;
     to->sites = malloc(gs.num_sites * sizeof(struct site));
@@ -237,21 +237,14 @@ int cmd_type(char * cmd) {
         case 'W': return CMD_TYPE_WAIT;
         case 'M': return CMD_TYPE_MOVE;
         case 'B': return CMD_TYPE_BUILD;
-        default: return NONE;
+        default: fprintf(stderr, "CMD TYPE ERROR\n"); exit(1);
     }
 }
 
 int parse_decimal (char * s) {
     // supports string of one or two digits. The string needs not be
     // null-terminated.
-	int n1, n2;
-	n1 = *s - '0';
-	n2 = *(++s);
-	if (n2 == ' ') {
-		return n1;
-	} else {
-		return 10*n1 + n2;
-	}
+	return 10*(s[0] - '0') + (s[1] - '0');
 }
 
 char dig(int n) {
@@ -263,7 +256,7 @@ void simulate(struct game * g, char * cmd) {
     // hack: Only value build commands and assume they
     // are immediately constructed
 	if (cmd_type(cmd) == CMD_TYPE_BUILD) {
-		int site_id = parse_decimal(cmd + 6 * sizeof (char));
+		int site_id = parse_decimal(&cmd[6]);
 		g->sites[site_id].structure_type = STRUCTURE_TYPE_BARRACKS;
         g->sites[site_id].param_2 = CREEP_TYPE_KNIGHT;
         g->sites[site_id].owner = OWNER_FRIENDLY;
@@ -336,8 +329,11 @@ int main()
         
 		for (char * s = cands; *s != '\0'; ) {
             struct game game2;
+            fprintf(stderr, "Copying game... \n");
             copy_game(&game, &game2);
+            fprintf(stderr, "Simulating... \n");
             simulate(&game2, s);
+            fprintf(stderr, "Calculating game value...\n");
             double value = game_value(&game2);
             fprintf(stderr, "Simulated value of %s is %f.\n", s, value);
 

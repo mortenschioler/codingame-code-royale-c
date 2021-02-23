@@ -70,10 +70,6 @@ struct game {
 	struct unit *units;
 };
 
-enum barracks_type {
-	KNIGHT, ARCHER, GIANT
-};
-
 void load_game_static (struct game_static *);
 void print_game_static (struct game_static *);
 void print_game (struct game *);

@@ -335,7 +335,7 @@ int main()
 
         t2 = ms_epoch();
 
-        fprintf(stderr, "Elapsed time for game round: %d ms\n", t2-t1);
+        fprintf(stderr, "Elapsed time for game round: %ld ms\n", t2-t1);
 		fprintf(stdout,"%s", best_strategy);
 
 		free_game(&game);

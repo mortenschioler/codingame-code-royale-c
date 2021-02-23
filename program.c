@@ -39,6 +39,7 @@ struct game_static {
 	// array is used.
 	struct site_static sites[NUM_SITES_MAX];
 };
+struct game_static gs;
 
 struct site {
 	int site_id;
@@ -76,8 +77,6 @@ double distance(int x0, int y0, int x1, int x2);
 double game_value(struct game *);
 void simulate(struct game * g, char * cmd);
 void candidates(const struct game *, char * cands);
-
-struct game_static gs;
 
 long ms_epoch () {
     struct timeval tv;

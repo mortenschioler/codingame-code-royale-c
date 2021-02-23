@@ -70,17 +70,6 @@ struct game {
 	struct unit *units;
 };
 
-void load_game_static (struct game_static *);
-void print_game_static (struct game_static *);
-void print_game (struct game *);
-void load_game(struct game *);
-void load_sites(struct game *);
-void load_site(struct site *);
-void load_units(struct game *);
-void load_unit(struct unit *);
-void free_game(struct game *);
-void copy_game (struct game * from, struct game * to);
-
 int square(int n);
 double distance(int x0, int y0, int x1, int x2);
 
@@ -120,20 +109,6 @@ void print_game_static (struct game_static *gs) {
 	}
 }
 
-void load_game (struct game *g) {
-	scanf("%d%d", &g->gold, &g->touched_site);
-	load_sites(g);
-	load_units(g);
-}
-
-void load_sites(struct game *g) {
-	struct site *sites;
-	g->sites = sites = malloc(gs.num_sites * sizeof(struct site));
-	for (int i = 0; i < gs.num_sites; i++) {
-		load_site(sites++);
-	}
-}
-
 void load_site(struct site *s) {
 	scanf("%d%d%d%d%d%d%d",
 			&s->site_id,
@@ -143,6 +118,19 @@ void load_site(struct site *s) {
 			&s->owner,
 			&s->param_1,
 			&s->param_2);
+}
+
+
+void load_sites(struct game *g) {
+	struct site *sites;
+	g->sites = sites = malloc(gs.num_sites * sizeof(struct site));
+	for (int i = 0; i < gs.num_sites; i++) {
+		load_site(sites++);
+	}
+}
+
+void load_unit(struct unit *u) {
+	scanf("%d%d%d%d%d", &u->x, &u->y, &u->owner, &u->unit_type, &u->health);
 }
 
 void load_units(struct game *g) {
@@ -156,9 +144,12 @@ void load_units(struct game *g) {
 	}
 }
 
-void load_unit(struct unit *u) {
-	scanf("%d%d%d%d%d", &u->x, &u->y, &u->owner, &u->unit_type, &u->health);
+void load_game (struct game *g) {
+	scanf("%d%d", &g->gold, &g->touched_site);
+	load_sites(g);
+	load_units(g);
 }
+
 
 void free_game(struct game *g) {
 	free(g->sites);

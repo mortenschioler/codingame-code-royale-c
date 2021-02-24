@@ -16,6 +16,7 @@
 #define CMD_TYPE_WAIT 0
 #define CMD_TYPE_MOVE 1
 #define CMD_TYPE_BUILD 2
+#define CMD_TRAIN_SITE_ID_INDEX 6
 
 struct site_static;
 struct game_static;
@@ -118,7 +119,6 @@ void load_site(struct site *s) {
 			&s->param_1,
 			&s->param_2);
 }
-
 
 void load_sites(struct game *g) {
 	struct site *sites;
@@ -253,12 +253,12 @@ char * base_build_cmd_str (int structure_type, int creep_type) {
     switch (structure_type) {
         case (STRUCTURE_TYPE_BARRACKS):
         switch (creep_type) {
-            case CREEP_TYPE_KNIGHT: return "BUILD 00 BARRACKS-KNIGHT\n";
-            case CREEP_TYPE_ARCHER: return "BUILD 00 BARRACKS-ARCHER\n";
-            case CREEP_TYPE_GIANT: return "BUILD 00 BARRACKS-GIANT\n";
+            case CREEP_TYPE_KNIGHT: return "BUILD 00 BARRACKS-KNIGHT\nTRAIN\n";
+            case CREEP_TYPE_ARCHER: return "BUILD 00 BARRACKS-ARCHER\nTRAIN\n";
+            case CREEP_TYPE_GIANT: return "BUILD 00 BARRACKS-GIANT\nTRAIN\n";
             default: exit(1);
         }
-        case (STRUCTURE_TYPE_TOWER): return "BUILD 00 TOWER\n";
+        case (STRUCTURE_TYPE_TOWER): return "BUILD 00 TOWER\nTRAIN\n";
         default: exit(1);
     }
 }
@@ -273,20 +273,22 @@ void format_decimal (char * dest, int n) {
     dest[1] = dig(ones);
 }
 
+void set_site_id (char * cmd, int site_id) {
+	format_decimal(&cmd[CMD_TRAIN_SITE_ID_INDEX], site_id);
+}
+
 void build_cmd (char * dest, int site_id, int structure_type, int creep_type) {
     char * base_str = base_build_cmd_str(structure_type, creep_type);
     strcpy(dest, base_str);
-    format_decimal(&dest[6], site_id);
+    set_site_id(dest, site_id);
 }
 
-void candidates(const struct game * g, char * cands) {
-    char * cmd = cands;
+void candidates(const struct game * g, char * cmd) {
     // For each site, build each building
-    for (int i = 0; i < gs.num_sites; i++) {
-        build_cmd(cmd, i, STRUCTURE_TYPE_BARRACKS, CREEP_TYPE_KNIGHT);
-        strcat(cmd, "TRAIN\n");
-        // move to end of string
-        while(*(cmd++));
+    for (int site_id = 0; site_id < gs.num_sites; site_id++) {
+        build_cmd(cmd, site_id, STRUCTURE_TYPE_BARRACKS, CREEP_TYPE_KNIGHT);
+        // go to end of commands to add the next
+        while(*cmd++);
     }
 }
 
@@ -296,8 +298,7 @@ int main()
 	load_game_static(&gs);
 	print_game_static(&gs);
 
-    char cands[10000];
-
+    char cands[100000];
 	// game loop
 	while (1) {
         long t1,t2;
@@ -313,23 +314,23 @@ int main()
         
         candidates(&game, cands);
         
-		for (char * s = cands; *s != '\0'; ) {
-            struct game game2;
+    	struct game game2;
+		for (char * cmd = cands; *cmd != '\0'; ) {
             fprintf(stderr, "Copying game... \n");
             copy_game(&game, &game2);
             fprintf(stderr, "Simulating... \n");
-            simulate(&game2, s);
+            simulate(&game2, cmd);
             fprintf(stderr, "Calculating game value...\n");
             double value = game_value(&game2);
-            fprintf(stderr, "Simulated value of %s is %f.\n", s, value);
+            fprintf(stderr, "Simulated value of %s is %f.\n", cmd, value);
 
-            if(value >= best_value) {
-                fprintf(stderr, "New best strategy found.\n");
+            if(value > best_value) {
+                fprintf(stderr, "New best strategy found: [%s].\n", cmd);
                 best_value = value;
-                best_strategy = s;
+                best_strategy = cmd;
             }
             free_game(&game2);
-            while(*s++ != '\0');
+            while(*cmd++ != '\0');
         }
 
         t2 = ms_epoch();

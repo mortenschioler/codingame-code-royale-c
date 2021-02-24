@@ -249,6 +249,11 @@ void simulate(struct game * g, char * cmd) {
 	}
 }
 
+void panic_fallthrough() {
+	fprintf(stderr, "PANIC: Fallthrough");
+	exit(1);
+}
+
 char * base_build_cmd_str (int structure_type, int creep_type) {
     switch (structure_type) {
         case (STRUCTURE_TYPE_BARRACKS):
@@ -256,10 +261,10 @@ char * base_build_cmd_str (int structure_type, int creep_type) {
             case CREEP_TYPE_KNIGHT: return "BUILD 00 BARRACKS-KNIGHT\nTRAIN\n";
             case CREEP_TYPE_ARCHER: return "BUILD 00 BARRACKS-ARCHER\nTRAIN\n";
             case CREEP_TYPE_GIANT: return "BUILD 00 BARRACKS-GIANT\nTRAIN\n";
-            default: exit(1);
+            default: panic_fallthrough();
         }
         case (STRUCTURE_TYPE_TOWER): return "BUILD 00 TOWER\nTRAIN\n";
-        default: exit(1);
+        default: panic_fallthrough();
     }
 }
 
@@ -287,7 +292,12 @@ void candidates(const struct game * g, char * cmd) {
     // For each site, build each building
     for (int site_id = 0; site_id < gs.num_sites; site_id++) {
         build_cmd(cmd, site_id, STRUCTURE_TYPE_BARRACKS, CREEP_TYPE_KNIGHT);
-        // go to end of commands to add the next
+        while(*cmd++);
+		build_cmd(cmd, site_id, STRUCTURE_TYPE_BARRACKS, CREEP_TYPE_ARCHER);
+        while(*cmd++);
+		build_cmd(cmd, site_id, STRUCTURE_TYPE_BARRACKS, CREEP_TYPE_GIANT);
+        while(*cmd++);
+		build_cmd(cmd, site_id, STRUCTURE_TYPE_TOWER, NONE);
         while(*cmd++);
     }
 }
@@ -316,19 +326,20 @@ int main()
         
     	struct game game2;
 		for (char * cmd = cands; *cmd != '\0'; ) {
-            fprintf(stderr, "Copying game... \n");
+            fprintf(stderr, "Copying game... ");
             copy_game(&game, &game2);
-            fprintf(stderr, "Simulating... \n");
+            fprintf(stderr, "Simulating... ");
             simulate(&game2, cmd);
-            fprintf(stderr, "Calculating game value...\n");
+            fprintf(stderr, "Calculating game value... ");
             double value = game_value(&game2);
-            fprintf(stderr, "Simulated value of %s is %f.\n", cmd, value);
-
+			fprintf(stderr, "Done. \n Simulated value of [%s] is %f ", cmd, value, best_value);
             if(value > best_value) {
-                fprintf(stderr, "New best strategy found: [%s].\n", cmd);
+                fprintf(stderr, "> %f. New best strategy found.\n", best_value);
                 best_value = value;
                 best_strategy = cmd;
-            }
+            } else {
+				fprintf(stderr, "<= %f. Strategy is rejected.\n", best_value);
+			}
             free_game(&game2);
             while(*cmd++ != '\0');
         }

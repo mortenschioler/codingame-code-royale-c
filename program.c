@@ -18,6 +18,16 @@
 #define CMD_TYPE_BUILD 2
 #define CMD_TRAIN_SITE_ID_INDEX 6
 
+#define ERROR	40000
+#define WARN	30000
+#define INFO	20000
+#define DEBUG	10000
+#define LOG_LEVEL DEBUG
+#define log(LEVEL,...) \
+            if (LEVEL >= LOG_LEVEL) fprintf(stderr, __VA_ARGS__);
+
+typedef int log_level;
+
 struct site_static;
 struct game_static;
 struct game;
@@ -99,13 +109,13 @@ void load_game_static (struct game_static *gs) {
 	}
 }
 
-void print_game_static (struct game_static *gs) {
-	fprintf(stderr, "num_sites: %d\n", gs->num_sites);
-	fprintf(stderr, "%8s%8s%8s%8s\n", "site_id", "x", "y", "radius");
+void print_game_static (struct game_static *gs, log_level l) {
+	log(l,"num_sites: %d\n", gs->num_sites);
+	log(l,"%8s%8s%8s%8s\n", "site_id", "x", "y", "radius");
 	struct site_static * s;
 	for (int i = 0; i < gs->num_sites; i++) {
 		s = &gs->sites[i];
-		fprintf(stderr, "%8d%8d%8d%8d\n", s->site_id, s->x, s->y, s->radius);
+		log(l,"%8d%8d%8d%8d\n", s->site_id, s->x, s->y, s->radius);
 	}
 }
 
@@ -155,33 +165,33 @@ void free_game(struct game *g) {
 	free(g->units);
 }
 
-void print_player_info(struct game *g) {
-	fprintf(stderr, "Game:\nGold=%d, touched_site=%d, num_units=%d\n", g->gold, g->touched_site, g->num_units);
+void print_player_info(struct game *g, log_level l) {
+	log(l,"Game:\nGold=%d, touched_site=%d, num_units=%d\n", g->gold, g->touched_site, g->num_units);
 }
 
-void print_sites (struct game *g) {
-	fprintf(stderr, "site_id\tstructure_type\towner\tparam_1\tparam_2\n");
+void print_sites (struct game *g, log_level l) {
+	log(l,"site_id\tstructure_type\towner\tparam_1\tparam_2%c" , '\n');
 	struct site *s;
 	for (int i = 0; i < gs.num_sites; i++) {
 		s = &g->sites[i];
-		fprintf(stderr, "%d\t%d\t%d\t%d\t%d\n", s->site_id, s->structure_type, s->owner, s->param_1, s->param_2);
+		log(l,"%d\t%d\t%d\t%d\t%d\n", s->site_id, s->structure_type, s->owner, s->param_1, s->param_2);
 	}
 }
 
-void print_units (struct game *g) {
-	fprintf(stderr, "x\ty\towner\tunit_type\thealth\n");
+void print_units (struct game *g, log_level l) {
+	log(l,"x\ty\towner\tunit_type\thealth%c", '\n');
 	struct unit u;
 	for (int i = 0; i < g->num_units; i++) {
 		u = g->units[i];
-		fprintf(stderr, "%d\t%d\t%d\t%d\t%d\n", u.x, u.y, u.owner, u.unit_type, u.health);
+		log(l,"%d\t%d\t%d\t%d\t%d\n", u.x, u.y, u.owner, u.unit_type, u.health);
 	}
 }
 
 // print turn-specific information
-void print_game (struct game *g) {
-	print_player_info(g);
-	print_sites (g);
-	print_units (g);
+void print_game (struct game *g, log_level l) {
+	print_player_info(g, l);
+	print_sites (g, l);
+	print_units (g, l);
 }
 
 int square (int n) {
@@ -223,7 +233,7 @@ int cmd_type(char * cmd) {
         case 'W': return CMD_TYPE_WAIT;
         case 'M': return CMD_TYPE_MOVE;
         case 'B': return CMD_TYPE_BUILD;
-        default: fprintf(stderr, "CMD TYPE ERROR\n"); exit(1);
+        default: log(ERROR,"%s", "CMD TYPE ERROR\n"); exit(1);
     }
 }
 
@@ -250,7 +260,7 @@ void simulate(struct game * g, char * cmd) {
 }
 
 void panic_fallthrough() {
-	fprintf(stderr, "PANIC: Fallthrough");
+	log(ERROR,"%s", "PANIC: Fallthrough");
 	exit(1);
 }
 
@@ -306,7 +316,7 @@ int main()
 {
 
 	load_game_static(&gs);
-	print_game_static(&gs);
+	print_game_static(&gs, DEBUG);
 
     char cands[100000];
 	// game loop
@@ -315,7 +325,7 @@ int main()
 
 		struct game game;
 		load_game(&game);
-        // print_game(&game);
+        // print_game(&game, DEBUG);
 
         t1 = ms_epoch();
 
@@ -326,19 +336,19 @@ int main()
         
     	struct game game2;
 		for (char * cmd = cands; *cmd != '\0'; ) {
-            fprintf(stderr, "Copying game... ");
+            log(DEBUG,"Copying game...%c", ' ');
             copy_game(&game, &game2);
-            fprintf(stderr, "Simulating... ");
+            log(DEBUG,"Simulating...%c", ' ');
             simulate(&game2, cmd);
-            fprintf(stderr, "Calculating game value... ");
+            log(DEBUG,"Calculating game value...%c", ' ');
             double value = game_value(&game2);
-			fprintf(stderr, "Done. \n Simulated value of [%s] is %f ", cmd, value, best_value);
+			log(DEBUG,"Done. \n Simulated value of [%s] is %f ", cmd, value);
             if(value > best_value) {
-                fprintf(stderr, "> %f. New best strategy found.\n", best_value);
+                log(DEBUG,"> %f. New best strategy found.\n", best_value);
                 best_value = value;
                 best_strategy = cmd;
             } else {
-				fprintf(stderr, "<= %f. Strategy is rejected.\n", best_value);
+				log(DEBUG,"<= %f. Strategy is rejected.\n", best_value);
 			}
             free_game(&game2);
             while(*cmd++ != '\0');
@@ -346,8 +356,8 @@ int main()
 
         t2 = ms_epoch();
 
-        fprintf(stderr, "Elapsed time for game round: %ld ms\n", t2-t1);
-		fprintf(stdout,"%s", best_strategy);
+        log(DEBUG,"Elapsed time for game round: %ld ms\n", t2-t1);
+		printf("%s", best_strategy);
 
 		free_game(&game);
 	}
